@@ -1,0 +1,251 @@
+<template>
+  <div>
+    <div class="d-flex justify-left mt-1">
+      <!-- <v-icon color="black" class="fab" dark x-large>mdi-numeric-1-circle-outline</v-icon> -->
+      <p>1. Create your Quick Start Guide on Google Docs.</p>
+    </div>
+    <div class="d-flex justify-left mt-1">
+      <p>2. Make your guide viewable by everyone.</p>
+    </div>
+    <div class="d-flex justify-left mt-1">
+      <p>3. Save your link here!</p>
+    </div>
+    <div class="d-flex justify-left mt-1">
+      <p>4. Create your website with the Quick Start Guide!</p>
+    </div>
+    <h1 class="d-flex align-center justify-center mt-auto mb-auto">Guide's Link:</h1>
+    <div>
+      <div v-if="userIsEmployer">
+        <v-text-field
+          v-model="participantOKR.guide_links[0]"
+          :rules="[required, validDocLink]"
+          outlined
+          :disabled="true"
+          label="Paste a link"
+          rounded
+        >
+          {{ participantOKR.guide_links }}
+        </v-text-field>
+      </div>
+      <div v-else>
+        <v-text-field
+          v-model="participantOKR.guide_links[0]"
+          :rules="[required, validDocLink]"
+          outlined
+          label="Paste a link"
+          rounded
+        >
+          {{ participantOKR.guide_links }}
+        </v-text-field>
+      </div>
+      <iframe
+        :src="(isValidDocLink(docLink) ? docLink : participantOKR.guide_links) + '?embedded=true'"
+        class="doc-embed"
+      ></iframe>
+      <!-- <v-text-field v-model="inputText" label="Paste a link"></v-text-field> -->
+      <div v-if="!userIsEmployer">
+        <div v-if="isValidDocLink(participantOKR.guide_links[0])">
+          <div class="button-container">
+            <v-btn
+              v-model="participantOKR.guide_links[0]"
+              color="purple"
+              :disabled="false"
+              rounded
+              @click="$emit('save-progress')"
+              >Save and share with your team
+            </v-btn>
+          </div>
+        </div>
+        <div v-else>Please Enter A Valid Link</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style>
+.button-container {
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+}
+
+.green-button {
+  display: block;
+  background-color: green;
+  color: white;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  order-radius: 5px;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+</style>
+
+<style lange="scss">
+.activity-documentation {
+  max-width: 100%;
+}
+.doc-embed {
+  border-radius: 10px;
+  border-color: black;
+  width: 100%;
+  height: 100vh;
+}
+</style>
+
+<script lang="ts">
+import { defineComponent, ref, computed } from '@vue/composition-api';
+// import Tab from './m-team-tab.vue';
+export default defineComponent({
+  name: 'MQuickStartupGuide',
+  props: {
+    fetchProgram: {
+      required: false,
+      type: [Object, Function],
+      default: () => {}
+    },
+    adkType: {
+      required: false,
+      type: String,
+      default: ''
+    },
+    userType: {
+      required: true,
+      type: String,
+      default: ''
+    },
+    value: {
+      type: Object,
+      default: () => {}
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    }
+  },
+  setup(_props, _ctx) {
+    const programDocument: any = computed({
+      get: () => _props.value,
+      set: newVal => {
+        _ctx.emit('input', newVal);
+      }
+    });
+
+    const adkIndex = computed(() => {
+      const indx = programDocument.value?.data.adks?.findIndex(adk => {
+        if (adk) {
+          return adk.name === 'Quick Startup Guide';
+        }
+        return false;
+      });
+      return indx;
+    });
+
+    const fieldIndex = computed(() => {
+      const fieldIndex = programDocument.value?.data?.adks?.[adkIndex.value]?.fields?.findIndex(
+        field => {
+          if (field.name) {
+            return field.name === 'm-quick-startup-guide';
+          }
+          return false;
+        }
+      );
+      return fieldIndex;
+    });
+
+    const fieldValue = computed({
+      get: () => programDocument.value?.data?.adks?.[adkIndex.value]?.fields[fieldIndex.value],
+      set: newVal => {
+        if (fieldValue.value)
+          programDocument.value.data.adks[adkIndex.value].fields[fieldIndex.value] = newVal;
+      }
+    });
+
+    const userIsEmployer = ref(_props.userType === 'organizer');
+
+    const organizerOKR = computed({
+      get: () => fieldValue.value.setup,
+      set: newVal => {
+        fieldValue.value.setup = newVal;
+      }
+    });
+    const participantValue = computed({
+      get: () => {
+        if (!fieldValue.value.value) {
+          // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+          fieldValue.value.value = {
+            guide_links: ''
+          };
+        }
+        // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+        if (!fieldValue.value.value.guide_links) fieldValue.value.value.guide_links = '';
+
+        return fieldValue.value.value;
+      },
+      set: newVal => {
+        fieldValue.value.value = newVal;
+      }
+    });
+    const docRegex = /(https:\/\/)docs.google.com\/document\/d\/e\/.*\/pub/;
+    const docLink = ref(fieldValue.value.guide_links);
+    const exampleDoc =
+      'https://docs.google.com/document/d/e/2PACX-1vQu4kEK2uy9sV70G-kqL6EZ83ucJqJnkIb08YlCyfFVvxaBXRdMA7JctHfVebL0yOOeaMDKuTaKcA64/pub';
+    const validators = {
+      required: val => !!val || 'Field is required',
+      validDocLink: val => !!val.match(docRegex) || 'Invalid doc link'
+    };
+
+    const isValidDocLink = link => link && link.match(docRegex);
+
+    return {
+      // fieldValue,
+      participantOKR: participantValue,
+      docRegex,
+      isValidDocLink,
+      docLink,
+      exampleDoc,
+      userIsEmployer
+    };
+  },
+  data() {
+    return {
+      count: 0,
+      inputText: '',
+      savedInput: '',
+      temp: false
+    };
+  },
+  methods: {
+    handleClick() {
+      // Logic for button click goes here
+      console.log('Button clicked!');
+    },
+    saveInput(val) {
+      if (val && val.match(this.docRegex)) {
+        // console.log(this.inputText);
+        this.fieldValue.value.value.guide_links[0] = this.inputText;
+        // this.inputText = ''; // Clear the input after saving
+      }
+    },
+    // openNewTabContent() {
+    //   const url = 'https://example.com'; // Replace this with your desired URL
+
+    //   // Open a new tab with the specified URL
+    //   window.open(url, '_blank');
+    // }
+    required(val) {
+      if (val) {
+        return true;
+      }
+      return 'Required';
+    },
+    validDocLink(val) {
+      if (val.match(this.docRegex)) {
+        return true;
+      }
+      return 'Invalid docs link';
+    }
+  }
+});
+</script>
