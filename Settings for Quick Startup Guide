@@ -1,0 +1,36 @@
+import activity from './m-quick-startup-guide.vue';
+
+export default activity;
+
+export const componentRegistrationData = {
+  name: 'Quick Startup Guide',
+  icon: 'mdi-file-document-plus-outline',
+  description: 'paste your google docs startup guide here',
+  status: true,
+  setupRequired: false,
+  styling: {
+    borderColor: '#3c9ccc'
+  },
+  fields: [
+    {
+      roles: ['employer', 'participant'],
+      name: 'm-quick-startup-guide',
+      type: 'molecule',
+      position: 0,
+      preset: {},
+      setup: {},
+      value: {
+        guide_links: [' ']
+      }
+    },
+    {
+      roles: ['participant'],
+      name: 'm-save-adk-only',
+      type: 'molecule',
+      position: 1,
+      preset: {},
+      setup: {},
+      value: {}
+    }
+  ]
+};
